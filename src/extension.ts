@@ -32,11 +32,59 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const server = new RelayServer();
 
+	// Status bar item: at-a-glance server state, click to toggle. Turns the EADDRINUSE
+	// case from a mystery into a glance (guide 3.3 / 6).
+	const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+	statusBar.command = 'relay.toggleServer';
+	context.subscriptions.push(statusBar);
+
+	type ServerState = 'listening' | 'stopped' | 'busy';
+	function setStatus(state: ServerState) {
+		const port = vscode.workspace.getConfiguration('relayPanel').get('port', 23517);
+		switch (state) {
+			case 'listening':
+				statusBar.text = `$(broadcast) Relay :${port}`;
+				statusBar.tooltip = 'Relay is listening — click to stop';
+				statusBar.backgroundColor = undefined;
+				break;
+			case 'stopped':
+				statusBar.text = `$(debug-disconnect) Relay (off)`;
+				statusBar.tooltip = 'Relay is stopped — click to start';
+				statusBar.backgroundColor = undefined;
+				break;
+			case 'busy':
+				statusBar.text = `$(error) Relay :${port} busy`;
+				statusBar.tooltip = `Port ${port} is in use (Ray.app running?) — click to retry`;
+				statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+				break;
+		}
+		statusBar.show();
+	}
+
+	let running = false;
+
 	function startFromConfig() {
 		const cfg = vscode.workspace.getConfiguration('relayPanel');
 		server.stop();
 		server.start(cfg.get('host', '127.0.0.1'), cfg.get('port', 23517));
 	}
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('relay.toggleServer', () => {
+			if (running) {
+				server.stop();
+				running = false;
+				setStatus('stopped');
+			} else {
+				startFromConfig();
+			}
+		})
+	);
+
+	server.on('listening', () => {
+		running = true;
+		setStatus('listening');
+	});
 
 	startFromConfig();
 
@@ -49,6 +97,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 	server.on('error', (err) => {
 		if (err.code === 'EADDRINUSE') {
+			running = false;
+			setStatus('busy');
 			const port = vscode.workspace.getConfiguration('relayPanel').get('port', 23517);
 			vscode.window.showWarningMessage(
 				`Ray Panel: port ${port} is already in use (Ray.app running?). ` +

@@ -20,6 +20,11 @@
                 "title": "Clear Output",
                 "category": "Relay",
                 "icon": "$(clear-all)"
+            },
+            {
+                "command": "relay.toggleServer",
+                "title": "Toggle Server",
+                "category": "Relay"
             }
         ],
         "menus": {
