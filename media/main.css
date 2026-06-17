@@ -67,3 +67,72 @@ body {
 .relay-color-blue { border-left-color: var(--vscode-charts-blue); }
 .relay-color-orange { border-left-color: var(--vscode-charts-orange); }
 .relay-color-purple { border-left-color: var(--vscode-charts-purple); }
+
+/* ---------------------------------------------------------------------------
+   Theme-aware sf-dump overrides.
+
+   The vendored sf-dump.css ships a fixed dark palette (background #18171B,
+   strings #56DB3A, ...) that looks wrong on light themes. Rather than maintain
+   a separate light block, we remap every color to VS Code's theme variables,
+   which already resolve to the active theme — light OR dark — automatically.
+   debugTokenExpression-* are the variables VS Code uses to render its own debug
+   value tree, so a dumped value tree gets native, theme-correct coloring.
+   These selectors mirror sf-dump.css exactly; loaded afterwards, they win on
+   source order without needing higher specificity or !important.
+   --------------------------------------------------------------------------- */
+pre.sf-dump,
+pre.sf-dump .sf-dump-default {
+  background-color: transparent;
+  color: var(--vscode-foreground);
+}
+pre.sf-dump .sf-dump-num,
+pre.sf-dump .sf-dump-index,
+pre.sf-dump .sf-dump-ellipsis-note {
+  color: var(--vscode-debugTokenExpression-number, var(--vscode-charts-blue));
+}
+pre.sf-dump .sf-dump-const {
+  color: var(--vscode-debugTokenExpression-boolean, var(--vscode-charts-purple));
+}
+pre.sf-dump .sf-dump-str,
+pre.sf-dump .sf-dump-key {
+  color: var(--vscode-debugTokenExpression-string, var(--vscode-charts-green));
+}
+pre.sf-dump .sf-dump-note {
+  color: var(--vscode-debugTokenExpression-type, var(--vscode-symbolIcon-classForeground, var(--vscode-charts-blue)));
+}
+pre.sf-dump .sf-dump-public,
+pre.sf-dump .sf-dump-protected,
+pre.sf-dump .sf-dump-private {
+  color: var(--vscode-debugTokenExpression-name, var(--vscode-foreground));
+}
+pre.sf-dump .sf-dump-ref,
+pre.sf-dump .sf-dump-ellipsis {
+  color: var(--vscode-descriptionForeground);
+}
+pre.sf-dump .sf-dump-meta {
+  color: var(--vscode-symbolIcon-keywordForeground, var(--vscode-charts-purple));
+}
+/* Hover + highlight: drop the hardcoded purple/white (unreadable on light themes)
+   for theme list/selection colors. !important beats sf-dump's own !important. */
+.sf-dump-hover:hover {
+  background-color: var(--vscode-list-hoverBackground) !important;
+  color: inherit !important;
+}
+pre.sf-dump .sf-dump-public.sf-dump-highlight,
+pre.sf-dump .sf-dump-protected.sf-dump-highlight,
+pre.sf-dump .sf-dump-private.sf-dump-highlight,
+pre.sf-dump .sf-dump-str.sf-dump-highlight,
+pre.sf-dump .sf-dump-key.sf-dump-highlight {
+  background: var(--vscode-editor-findMatchHighlightBackground);
+  border-color: var(--vscode-editor-findMatchHighlightBorder, transparent);
+}
+/* In-dump search box → native input colors. */
+pre.sf-dump .sf-dump-search-wrapper > * {
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border-color: var(--vscode-input-border, var(--vscode-panel-border));
+}
+pre.sf-dump .sf-dump-search-wrapper > input.sf-dump-search-input {
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+}
