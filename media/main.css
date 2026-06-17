@@ -9,6 +9,8 @@ body {
 #relay-list {
   display: flex;
   flex-direction: column;
+  gap: 6px;
+  padding: 6px;
 }
 
 /* Color filter toolbar — Ray.app-style dots, sticky at the top of the panel.
@@ -71,10 +73,12 @@ body {
 .relay-dot-blue   { --dot-color: var(--vscode-charts-blue); }
 .relay-dot-purple { --dot-color: var(--vscode-charts-purple); }
 
+/* Each entry is a discrete card, so the output stream reads as chunks. */
 .relay-item {
-  border-bottom: 1px solid var(--vscode-panel-border);
-  border-left: 3px solid transparent;
-  padding: 6px 10px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 5px;
+  padding: 8px 10px;
+  background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
 }
 
 .relay-hidden,
@@ -136,12 +140,67 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.relay-color-gray { border-left-color: var(--vscode-descriptionForeground); }
-.relay-color-red { border-left-color: var(--vscode-charts-red); }
-.relay-color-green { border-left-color: var(--vscode-charts-green); }
-.relay-color-blue { border-left-color: var(--vscode-charts-blue); }
-.relay-color-orange { border-left-color: var(--vscode-charts-orange); }
-.relay-color-purple { border-left-color: var(--vscode-charts-purple); }
+/* ---------------------------------------------------------------------------
+   Color-accent styles. A colored item carries `.relay-colored` and an inline
+   --relay-color variable; body[data-color-style] (set by relayPanel.colorStyle)
+   selects how that accent is drawn. Switching the attribute restyles every item
+   instantly — no re-render.
+   --------------------------------------------------------------------------- */
+
+/* border (default) — accent bar on the card's left edge. An inset shadow (not a
+   border) respects the card's rounded corners and doesn't shift layout. */
+body[data-color-style="border"] .relay-colored {
+  box-shadow: inset 3px 0 0 0 var(--relay-color);
+}
+
+/* tint — the whole card washed with the color, over its base surface.
+   Shared by the combined "tint-origin" style. */
+body[data-color-style="tint"] .relay-colored,
+body[data-color-style="tint-origin"] .relay-colored {
+  background: color-mix(in srgb, var(--relay-color) 10%, var(--vscode-editorWidget-background, var(--vscode-editor-background)));
+}
+/* The standalone tint adds a left accent bar; tint-origin relies on the footer chip. */
+body[data-color-style="tint"] .relay-colored {
+  box-shadow: inset 3px 0 0 0 var(--relay-color);
+}
+
+/* dot — filled dot in the card's left gutter, matching the filter dots */
+body[data-color-style="dot"] .relay-colored {
+  position: relative;
+  padding-left: 22px;
+}
+body[data-color-style="dot"] .relay-colored::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--relay-color);
+}
+
+/* origin — color sits with the footer metadata: a labeled chip plus tinted origin
+   text. The chip is a real element (so it has a tooltip); hidden for other styles.
+   Shared by the combined "tint-origin" style. */
+.relay-chip {
+  display: none;
+  align-self: center;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--relay-color);
+  cursor: help;
+}
+body[data-color-style="origin"] .relay-colored .relay-chip,
+body[data-color-style="tint-origin"] .relay-colored .relay-chip {
+  display: inline-block;
+}
+body[data-color-style="origin"] .relay-colored .relay-origin,
+body[data-color-style="tint-origin"] .relay-colored .relay-origin {
+  color: var(--relay-color);
+}
 
 /* ---------------------------------------------------------------------------
    Theme-aware sf-dump overrides.

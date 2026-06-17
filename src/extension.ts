@@ -5,6 +5,15 @@ import { RelayViewProvider } from './RelayViewProvider';
 import { RelayServer } from './RelayServer';
 import { RelayStore } from './RelayStore';
 
+// Color-accent styles offered by the relayPanel.colorStyle setting / picker.
+const COLOR_STYLES: ReadonlyArray<{ value: string; label: string; description: string }> = [
+	{ value: 'tint-origin', label: 'Tint + origin chip', description: 'Full-row tint with a labeled footer chip' },
+	{ value: 'border', label: 'Left border accent', description: '3px colored left edge' },
+	{ value: 'tint',   label: 'Soft full-row tint', description: 'Faint background wash + border' },
+	{ value: 'dot',    label: 'Gutter dot',         description: 'Filled dot, matches the filter dots' },
+	{ value: 'origin', label: 'Colored origin + chip', description: 'Accent in the footer only' },
+];
+
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -21,6 +30,27 @@ export function activate(context: vscode.ExtensionContext) {
 	// package.json) and in the command palette. Clearing the store emits 'cleared'.
 	context.subscriptions.push(
 		vscode.commands.registerCommand('relay.clear', () => store.clear())
+	);
+
+	// Color-style picker — the title-bar "dropdown" (a QuickPick, since native chrome
+	// can't host a <select>). Writes the setting; the webview reacts via the config
+	// listener below. Marks the current choice with a check.
+	context.subscriptions.push(
+		vscode.commands.registerCommand('relay.selectColorStyle', async () => {
+			const cfg = vscode.workspace.getConfiguration('relayPanel');
+			const current = cfg.get<string>('colorStyle', 'border');
+			const picked = await vscode.window.showQuickPick(
+				COLOR_STYLES.map((s) => ({
+					label: (s.value === current ? '$(check) ' : '') + s.label,
+					description: s.description,
+					value: s.value,
+				})),
+				{ title: 'Relay — color style', placeHolder: 'How payload colors are shown' }
+			);
+			if (picked) {
+				await cfg.update('colorStyle', picked.value, vscode.ConfigurationTarget.Global);
+			}
+		})
 	);
 
 	// Forward store mutations to the webview as normalized events. The webview is a
@@ -90,7 +120,17 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(
 		vscode.workspace.onDidChangeConfiguration((e) => {
-			if (e.affectsConfiguration('relayPanel')) startFromConfig();
+			// Only the transport settings warrant a server restart.
+			if (e.affectsConfiguration('relayPanel.host') || e.affectsConfiguration('relayPanel.port')) {
+				startFromConfig();
+			}
+			// Color style is a pure view concern — push it to the webview, no restart.
+			if (e.affectsConfiguration('relayPanel.colorStyle')) {
+				provider.post({
+					type: 'set-color-style',
+					style: vscode.workspace.getConfiguration('relayPanel').get('colorStyle', 'border'),
+				});
+			}
 		}),
 		{ dispose: () => server.stop() }  // clean shutdown on deactivate
 	);

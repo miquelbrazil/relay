@@ -183,6 +183,10 @@ export class RelayViewProvider implements vscode.WebviewViewProvider {
     const sfDumpCss = asset('sf-dump.css');   // VarDumper's dump styles (vendored)
     const purifyJs = asset('purify.min.js');  // DOMPurify (vendored)
 
+    const colorStyle = vscode.workspace
+      .getConfiguration('relayPanel')
+      .get<string>('colorStyle', 'border');
+
     return /* html */ `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -195,7 +199,7 @@ export class RelayViewProvider implements vscode.WebviewViewProvider {
   <link href="${sfDumpCss}" rel="stylesheet">
   <link href="${mainCss}" rel="stylesheet">
 </head>
-<body>
+<body data-color-style="${colorStyle}">
   <div id="relay-toolbar"></div>
   <div id="relay-list"></div>
   <script nonce="${nonce}" src="${purifyJs}"></script>

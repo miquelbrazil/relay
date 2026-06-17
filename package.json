@@ -25,14 +25,25 @@
                 "command": "relay.toggleServer",
                 "title": "Toggle Server",
                 "category": "Relay"
+            },
+            {
+                "command": "relay.selectColorStyle",
+                "title": "Color Style…",
+                "category": "Relay",
+                "icon": "$(symbol-color)"
             }
         ],
         "menus": {
             "view/title": [
                 {
+                    "command": "relay.selectColorStyle",
+                    "when": "view == relayPanel.view",
+                    "group": "navigation@1"
+                },
+                {
                     "command": "relay.clear",
                     "when": "view == relayPanel.view",
-                    "group": "navigation"
+                    "group": "navigation@2"
                 }
             ]
         },
@@ -69,6 +80,19 @@
                 "relayPanel.maxItems": {
                     "type": "number",
                     "default": 500
+                },
+                "relayPanel.colorStyle": {
+                    "type": "string",
+                    "enum": ["tint-origin", "border", "tint", "dot", "origin"],
+                    "enumDescriptions": [
+                        "A full-row tint plus a labeled color chip and tinted origin in the footer.",
+                        "A 3px colored bar on the left edge of the entry.",
+                        "A soft full-row background tint plus a left border.",
+                        "A filled color dot in the left gutter (matches the filter dots).",
+                        "A color chip and tinted origin in the footer only."
+                    ],
+                    "default": "tint-origin",
+                    "description": "How a payload's ray()->color() is visually applied to its entry. Switch it from the panel's Color Style… title-bar action."
                 },
                 "relayPanel.resolveOriginsFromWorkspace": {
                     "type": "boolean",

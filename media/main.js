@@ -8,6 +8,17 @@ const nodes = new Map();
 // Ray's filterable color palette. Order mirrors the dots in the Ray.app toolbar.
 const COLORS = ['gray', 'red', 'orange', 'green', 'blue', 'purple'];
 
+// Each color resolves to a theme variable, exposed per-item as --relay-color so the
+// active color style (border/tint/dot/origin, see main.css) can reference one value.
+const COLOR_VARS = {
+  gray: 'var(--vscode-descriptionForeground)',
+  red: 'var(--vscode-charts-red)',
+  orange: 'var(--vscode-charts-orange)',
+  green: 'var(--vscode-charts-green)',
+  blue: 'var(--vscode-charts-blue)',
+  purple: 'var(--vscode-charts-purple)',
+};
+
 // Active color filter. Empty = show everything. Persisted via the webview state so it
 // survives the panel being hidden/redrawn (the DOM is disposable; this isn't).
 const saved = vscode.getState() || {};
@@ -35,6 +46,10 @@ window.addEventListener('message', (event) => {
     case 'cleared':
       list.textContent = '';
       nodes.clear();
+      break;
+    case 'set-color-style':
+      // CSS keys off body[data-color-style], so existing items restyle instantly.
+      document.body.dataset.colorStyle = msg.style || 'border';
       break;
   }
 });
@@ -69,8 +84,12 @@ function renderItem(item) {
   if (item.hidden) {
     container.classList.add('relay-hidden');
   }
-  if (item.color) {
-    container.classList.add('relay-color-' + item.color);
+  // Tag colored items with the accent variable; the active color style decides how
+  // (border, tint, dot, or footer chip) it's drawn. Unknown colors get no accent.
+  const accent = item.color ? COLOR_VARS[item.color] : undefined;
+  if (accent) {
+    container.classList.add('relay-colored');
+    container.style.setProperty('--relay-color', accent);
   }
 
   // A badge is shown ONLY when a label is applied (ray()->label('...')), styled like
@@ -93,6 +112,13 @@ function renderItem(item) {
 // ("DashboardViewAction.php:19   01:29:14.901").
 function renderFooter(item) {
   const footer = el('div', 'relay-footer');
+  // Color chip — a real element (not a ::before) so it can carry a tooltip naming the
+  // color. Hidden by CSS for styles that don't use it.
+  if (item.color && COLOR_VARS[item.color]) {
+    const chip = el('span', 'relay-chip');
+    chip.title = `Color: ${item.color}`;
+    footer.appendChild(chip);
+  }
   if (item.origin && item.origin.file) {
     footer.appendChild(originLink(item.origin));
   }
