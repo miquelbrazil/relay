@@ -50,9 +50,15 @@ body {
   font-size: var(--vscode-editor-font-size, 0.9em);
 }
 
-.relay-origin {
-  display: inline-block;
+/* Origin pointer + timestamp on one line, like Ray.app. */
+.relay-footer {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
   margin-top: 4px;
+}
+
+.relay-origin {
   color: var(--vscode-textLink-foreground);
   font-size: 0.85em;
   text-decoration: none;
@@ -61,6 +67,12 @@ body {
 
 .relay-origin:hover {
   text-decoration: underline;
+}
+
+.relay-time {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
 }
 
 .relay-color-red { border-left-color: var(--vscode-charts-red); }

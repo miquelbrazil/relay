@@ -74,11 +74,29 @@ function renderItem(item) {
     container.appendChild(renderPayload(p));
   }
 
-  if (item.origin && item.origin.file) {
-    container.appendChild(originLine(item.origin));
-  }
-
+  container.appendChild(renderFooter(item));
   return container;
+}
+
+// Origin pointer and timestamp share one footer line, matching the Ray.app layout
+// ("DashboardViewAction.php:19   01:29:14.901").
+function renderFooter(item) {
+  const footer = el('div', 'relay-footer');
+  if (item.origin && item.origin.file) {
+    footer.appendChild(originLink(item.origin));
+  }
+  if (item.receivedAt) {
+    const time = el('span', 'relay-time');
+    time.textContent = formatTime(item.receivedAt);
+    footer.appendChild(time);
+  }
+  return footer;
+}
+
+function formatTime(ms) {
+  const d = new Date(ms);
+  const p = (n, len = 2) => String(n).padStart(len, '0');
+  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.${p(d.getMilliseconds(), 3)}`;
 }
 
 // `log` payloads carry pre-rendered VarDumper HTML (sf-dump trees) in content.values;
@@ -98,7 +116,7 @@ function renderPayload(p) {
   return wrap;
 }
 
-function originLine(origin) {
+function originLink(origin) {
   const a = el('a', 'relay-origin');
   a.href = '#';
   const file = String(origin.file || '');
