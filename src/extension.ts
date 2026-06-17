@@ -9,27 +9,18 @@ import { RelayStore } from './RelayStore';
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "relay" is now active!');
-
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('relay.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from relay!');
-	});
-
-	context.subscriptions.push(disposable);
-
 	const maxItems = vscode.workspace.getConfiguration('relayPanel').get('maxItems', 500);
 	const store = new RelayStore(maxItems);
 
 	const provider = new RelayViewProvider(context.extensionUri, store);
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(RelayViewProvider.viewType, provider)
+	);
+
+	// Clear command — surfaced as a title-bar button on the panel (menus.view/title in
+	// package.json) and in the command palette. Clearing the store emits 'cleared'.
+	context.subscriptions.push(
+		vscode.commands.registerCommand('relay.clear', () => store.clear())
 	);
 
 	// Forward store mutations to the webview as normalized events. The webview is a

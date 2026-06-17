@@ -16,10 +16,21 @@
     "contributes": {
         "commands": [
             {
-                "command": "relay.helloWorld",
-                "title": "Hello World"
+                "command": "relay.clear",
+                "title": "Clear Output",
+                "category": "Relay",
+                "icon": "$(clear-all)"
             }
         ],
+        "menus": {
+            "view/title": [
+                {
+                    "command": "relay.clear",
+                    "when": "view == relayPanel.view",
+                    "group": "navigation"
+                }
+            ]
+        },
         "viewsContainers": {
             "panel": [
                 {
