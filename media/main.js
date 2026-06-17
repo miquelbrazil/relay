@@ -5,6 +5,14 @@ const list = document.getElementById('relay-list');
 // uuid -> the rendered DOM node, so updates/removes can target it in place.
 const nodes = new Map();
 
+// Ray's filterable color palette. Order mirrors the dots in the Ray.app toolbar.
+const COLORS = ['gray', 'red', 'orange', 'green', 'blue', 'purple'];
+
+// Active color filter. Empty = show everything. Persisted via the webview state so it
+// survives the panel being hidden/redrawn (the DOM is disposable; this isn't).
+const saved = vscode.getState() || {};
+const activeColors = new Set(Array.isArray(saved.activeColors) ? saved.activeColors : []);
+
 window.addEventListener('message', (event) => {
   const msg = event.data;
   switch (msg.type) {
@@ -14,10 +22,12 @@ window.addEventListener('message', (event) => {
       for (const item of msg.items) {
         upsert(item);
       }
+      applyFilter();
       break;
     case 'item-added':
     case 'item-updated':
       upsert(msg.item);
+      applyFilter();
       break;
     case 'item-removed':
       remove(msg.uuid);
@@ -55,6 +65,7 @@ function remove(uuid) {
 function renderItem(item) {
   const container = el('div', 'relay-item');
   container.dataset.uuid = item.uuid;
+  container.dataset.color = item.color || '';
   if (item.hidden) {
     container.classList.add('relay-hidden');
   }
@@ -129,6 +140,45 @@ function originLink(origin) {
   return a;
 }
 
+// --- Color filtering (Ray.app-style dots) ----------------------------------
+
+function buildToolbar() {
+  const bar = document.getElementById('relay-toolbar');
+  if (!bar) {
+    return;
+  }
+  for (const color of COLORS) {
+    const dot = el('button', 'relay-dot relay-dot-' + color);
+    dot.type = 'button';
+    dot.title = `Show only ${color}`;
+    dot.dataset.color = color;
+    if (activeColors.has(color)) {
+      dot.classList.add('relay-dot-active');
+    }
+    dot.addEventListener('click', () => {
+      if (activeColors.has(color)) {
+        activeColors.delete(color);
+      } else {
+        activeColors.add(color);
+      }
+      dot.classList.toggle('relay-dot-active', activeColors.has(color));
+      vscode.setState({ activeColors: [...activeColors] });
+      applyFilter();
+    });
+    bar.appendChild(dot);
+  }
+}
+
+// An item is visible when no filter is active, or when its color is among the active
+// ones. Uncolored items are hidden while any color filter is on (matching Ray.app).
+function applyFilter() {
+  for (const node of nodes.values()) {
+    const color = node.dataset.color || '';
+    const visible = activeColors.size === 0 || (color && activeColors.has(color));
+    node.classList.toggle('relay-filtered', !visible);
+  }
+}
+
 // Strip <script>/<style> (we vendor our own sf-dump assets) but keep sf-dump's classes
 // and data-* attributes, which DOMPurify preserves by default. Never use 'unsafe-inline'
 // in the CSP to make raw payload scripts run — sanitize here instead.
@@ -175,4 +225,5 @@ function el(tag, cls) {
   return e;
 }
 
+buildToolbar();
 vscode.postMessage({ type: 'ready' });

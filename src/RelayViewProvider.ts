@@ -196,6 +196,7 @@ export class RelayViewProvider implements vscode.WebviewViewProvider {
   <link href="${mainCss}" rel="stylesheet">
 </head>
 <body>
+  <div id="relay-toolbar"></div>
   <div id="relay-list"></div>
   <script nonce="${nonce}" src="${purifyJs}"></script>
   <script nonce="${nonce}" src="${sfDumpJs}"></script>

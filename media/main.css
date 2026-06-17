@@ -11,13 +11,56 @@ body {
   flex-direction: column;
 }
 
+/* Color filter toolbar — Ray.app-style dots, sticky at the top of the panel. */
+#relay-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  background: var(--vscode-panel-background, var(--vscode-editor-background));
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.relay-dot {
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--vscode-panel-border);
+  background: var(--dot-color);
+  opacity: 0.4;
+  cursor: pointer;
+  transition: opacity 0.1s ease;
+}
+
+.relay-dot:hover {
+  opacity: 0.75;
+}
+
+/* Active filter: full opacity + a focus ring so the selected colors read clearly. */
+.relay-dot-active {
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--vscode-focusBorder);
+}
+
+.relay-dot-gray   { --dot-color: var(--vscode-descriptionForeground); }
+.relay-dot-red    { --dot-color: var(--vscode-charts-red); }
+.relay-dot-orange { --dot-color: var(--vscode-charts-orange); }
+.relay-dot-green  { --dot-color: var(--vscode-charts-green); }
+.relay-dot-blue   { --dot-color: var(--vscode-charts-blue); }
+.relay-dot-purple { --dot-color: var(--vscode-charts-purple); }
+
 .relay-item {
   border-bottom: 1px solid var(--vscode-panel-border);
   border-left: 3px solid transparent;
   padding: 6px 10px;
 }
 
-.relay-hidden {
+.relay-hidden,
+.relay-filtered {
   display: none;
 }
 
@@ -75,6 +118,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.relay-color-gray { border-left-color: var(--vscode-descriptionForeground); }
 .relay-color-red { border-left-color: var(--vscode-charts-red); }
 .relay-color-green { border-left-color: var(--vscode-charts-green); }
 .relay-color-blue { border-left-color: var(--vscode-charts-blue); }
