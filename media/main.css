@@ -36,7 +36,8 @@ body {
   color: var(--vscode-badge-foreground);
 }
 
-.relay-type {
+/* Label chip — same treatment the "log" badge used to have. */
+.relay-label {
   background: transparent;
   color: var(--vscode-descriptionForeground);
   border: 1px solid var(--vscode-panel-border);

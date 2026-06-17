@@ -62,14 +62,13 @@ function renderItem(item) {
     container.classList.add('relay-color-' + item.color);
   }
 
-  const header = el('div', 'relay-header');
+  // A badge is shown ONLY when a label is applied (ray()->label('...')), styled like
+  // Ray's label chip. The payload type is no longer surfaced as a badge.
   if (item.label) {
-    header.appendChild(badge(item.label));
+    const header = el('div', 'relay-header');
+    header.appendChild(badge(item.label, 'relay-label'));
+    container.appendChild(header);
   }
-  for (const p of item.payloads) {
-    header.appendChild(badge(p.type, 'relay-type'));
-  }
-  container.appendChild(header);
 
   for (const p of item.payloads) {
     container.appendChild(renderPayload(p));
