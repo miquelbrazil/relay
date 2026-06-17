@@ -11,16 +11,18 @@ body {
   flex-direction: column;
 }
 
-/* Color filter toolbar — Ray.app-style dots, sticky at the top of the panel. */
+/* Color filter toolbar — Ray.app-style dots, sticky at the top of the panel.
+   z-index must clear sf-dump's own (99999, reset below) so scrolled dump content
+   never paints over the dots; the solid background keeps text from bleeding through. */
 #relay-toolbar {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 100;
   display: flex;
   gap: 8px;
   align-items: center;
   padding: 6px 10px;
-  background: var(--vscode-panel-background, var(--vscode-editor-background));
+  background: var(--vscode-editor-background);
   border-bottom: 1px solid var(--vscode-panel-border);
 }
 
@@ -141,6 +143,11 @@ pre.sf-dump,
 pre.sf-dump .sf-dump-default {
   background-color: transparent;
   color: var(--vscode-foreground);
+}
+/* sf-dump ships position:relative; z-index:99999, which would stack dumps above the
+   sticky filter toolbar. Reset it — dumps don't need their own high stacking context. */
+pre.sf-dump {
+  z-index: auto;
 }
 pre.sf-dump .sf-dump-num,
 pre.sf-dump .sf-dump-index,
