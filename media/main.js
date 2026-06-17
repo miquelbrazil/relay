@@ -40,6 +40,8 @@ function upsert(item) {
     list.appendChild(node);
   }
   nodes.set(item.uuid, node);
+  // Sfdump resolves dumps by id via the document, so it must run AFTER attachment.
+  initDumps(node);
 }
 
 function remove(uuid) {
@@ -80,16 +82,17 @@ function renderItem(item) {
   return container;
 }
 
-// Phase 4 renderer: safe, text-only. `log` payloads carry pre-rendered VarDumper HTML
-// in content.values — we strip it to plain text for now. Phase 5 swaps this for the
-// vendored sf-dump tree (with sanitization + Sfdump init) per the guide.
+// `log` payloads carry pre-rendered VarDumper HTML (sf-dump trees) in content.values;
+// many helpers (html(), text(), custom packages) arrive as a `content` string. Both are
+// untrusted HTML off a localhost socket, so we sanitize before injecting, then let the
+// vendored Sfdump make the tree interactive (see initDumps).
 function renderPayload(p) {
   const wrap = el('div', 'relay-payload');
   const c = p.content || {};
   if (Array.isArray(c.values)) {
-    wrap.textContent = c.values.map(htmlToText).join('\n');
+    wrap.innerHTML = sanitize(c.values.join(''));
   } else if (typeof c.content === 'string') {
-    wrap.textContent = htmlToText(c.content);
+    wrap.innerHTML = sanitize(c.content);
   } else {
     wrap.textContent = JSON.stringify(c, null, 2);
   }
@@ -97,23 +100,48 @@ function renderPayload(p) {
 }
 
 function originLine(origin) {
-  const span = el('span', 'relay-origin');
+  const a = el('a', 'relay-origin');
+  a.href = '#';
   const file = String(origin.file || '');
   const short = file.split('/').pop() || file;
-  span.textContent = `${short}:${origin.line_number ?? ''}`;
-  return span;
+  a.textContent = `${short}:${origin.line_number ?? ''}`;
+  a.addEventListener('click', (e) => {
+    e.preventDefault();
+    vscode.postMessage({ type: 'open-origin', origin });
+  });
+  return a;
 }
 
-// Strip tags by letting the browser parse, then reading textContent. Assigning to
-// innerHTML never executes <script>, so this is safe for the plain-text Phase 4 view.
-// Real HTML rendering in Phase 5 must go through a sanitizer (DOMPurify).
-function htmlToText(s) {
-  if (typeof s !== 'string') {
-    return String(s);
+// Strip <script>/<style> (we vendor our own sf-dump assets) but keep sf-dump's classes
+// and data-* attributes, which DOMPurify preserves by default. Never use 'unsafe-inline'
+// in the CSP to make raw payload scripts run — sanitize here instead.
+function sanitize(html) {
+  if (typeof html !== 'string') {
+    return '';
   }
-  const div = document.createElement('div');
-  div.innerHTML = s;
-  return div.textContent || '';
+  return DOMPurify.sanitize(html, { FORBID_TAGS: ['script', 'style'] });
+}
+
+// The inline `Sfdump("sf-dump-NNN")` call that normally follows each dump is stripped by
+// the sanitizer, so we initialize each dump ourselves once, after it's in the document.
+function initDumps(root) {
+  if (typeof Sfdump !== 'function') {
+    return;
+  }
+  for (const pre of root.querySelectorAll('pre.sf-dump')) {
+    if (pre.dataset.relayInit) {
+      continue;
+    }
+    if (!pre.id) {
+      pre.id = 'sf-dump-' + Math.random().toString(36).slice(2);
+    }
+    pre.dataset.relayInit = '1';
+    try {
+      Sfdump(pre.id);
+    } catch (e) {
+      /* a malformed dump shouldn't take down the panel */
+    }
+  }
 }
 
 function badge(text, cls) {

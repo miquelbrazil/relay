@@ -50,10 +50,16 @@ body {
 }
 
 .relay-origin {
-  display: block;
+  display: inline-block;
   margin-top: 4px;
-  color: var(--vscode-descriptionForeground);
+  color: var(--vscode-textLink-foreground);
   font-size: 0.85em;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.relay-origin:hover {
+  text-decoration: underline;
 }
 
 .relay-color-red { border-left-color: var(--vscode-charts-red); }

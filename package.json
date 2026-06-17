@@ -53,6 +53,24 @@
                 "relayPanel.maxItems": {
                     "type": "number",
                     "default": 500
+                },
+                "relayPanel.resolveOriginsFromWorkspace": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "When an origin path isn't found on disk as-is, locate the file by its tail under the window's workspace folders (zero-config click-to-jump for container paths). Disable to require explicit relayPanel.pathMappings."
+                },
+                "relayPanel.pathMappings": {
+                    "type": "array",
+                    "default": [],
+                    "description": "Explicit override for click-to-jump (highest precedence). Each entry rewrites a remote path prefix to a local one, e.g. { \"remote\": \"/app\", \"local\": \"/Users/you/project\" }. Use to disambiguate when the same relative path exists in multiple open folders.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "remote": { "type": "string" },
+                            "local": { "type": "string" }
+                        },
+                        "required": ["remote", "local"]
+                    }
                 }
             }
         }
