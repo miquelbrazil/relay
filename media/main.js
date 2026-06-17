@@ -147,6 +147,26 @@ function buildToolbar() {
   if (!bar) {
     return;
   }
+
+  // Clear-all action — a hollow circle with an × that resets every color filter.
+  // It's a momentary action, not a toggle, so it has no active state.
+  const clear = el('button', 'relay-dot relay-dot-clear');
+  clear.type = 'button';
+  clear.title = 'Clear color filters';
+  clear.textContent = '×';
+  clear.addEventListener('click', () => {
+    if (activeColors.size === 0) {
+      return;
+    }
+    activeColors.clear();
+    for (const active of bar.querySelectorAll('.relay-dot-active')) {
+      active.classList.remove('relay-dot-active');
+    }
+    vscode.setState({ activeColors: [] });
+    applyFilter();
+  });
+  bar.appendChild(clear);
+
   for (const color of COLORS) {
     const dot = el('button', 'relay-dot relay-dot-' + color);
     dot.type = 'button';

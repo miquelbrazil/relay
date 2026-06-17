@@ -48,6 +48,22 @@ body {
   box-shadow: 0 0 0 2px var(--vscode-focusBorder);
 }
 
+/* Clear-all-filters button — hollow circle with an ×, always actionable (no toggle). */
+.relay-dot-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  font-size: 10px;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.relay-dot-clear:hover {
+  opacity: 1;
+}
+
 .relay-dot-gray   { --dot-color: var(--vscode-descriptionForeground); }
 .relay-dot-red    { --dot-color: var(--vscode-charts-red); }
 .relay-dot-orange { --dot-color: var(--vscode-charts-orange); }
