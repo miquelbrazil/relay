@@ -40,7 +40,7 @@
             "panel": [
                 {
                     "id": "relayPanelContainer",
-                    "title": "Ray",
+                    "title": "Relay",
                     "icon": "media/ray-icon.svg"
                 }
             ]
