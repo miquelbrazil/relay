@@ -1,22 +1,10 @@
 import * as http from 'http';
 import { EventEmitter } from 'events';
 
-export interface RelayEnvelope {
-  uuid: string;
-  payloads: RelayPayload[];
-  meta?: Record<string, unknown>;
-}
-
-export interface RelayPayload {
-  type: string;
-  content: Record<string, any>;
-  origin?: {
-    function_name?: string | null;
-    file?: string;
-    line_number?: number;
-    hostname?: string;
-  };
-}
+// Wire types live in protocol.ts (shared with the webview bundle). Re-export the ones
+// callers have historically imported from here so existing import sites keep working.
+export { RelayEnvelope, RelayPayload, RelayOrigin } from './protocol';
+import { RelayEnvelope } from './protocol';
 
 export class RelayServer extends EventEmitter {
   private server?: http.Server;

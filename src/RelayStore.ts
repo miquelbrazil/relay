@@ -1,17 +1,7 @@
 import { EventEmitter } from 'events';
-import { RelayEnvelope, RelayPayload } from './RelayServer';
+import { RelayEnvelope, RelayPayload, RelayItem } from './protocol';
 
-export interface RelayItem {
-  uuid: string;
-  payloads: RelayPayload[];          // content payloads, in arrival order
-  color?: string;
-  size?: string;
-  label?: string;
-  hidden?: boolean;
-  receivedAt: number;
-  origin?: RelayPayload['origin'];
-  projectName?: string;            // derived — see 4.3
-}
+export { RelayItem } from './protocol';
 
 const MODIFIERS = new Set(['color', 'size', 'label', 'hide', 'remove']);
 const SCREEN_CONTROLS = new Set(['new_screen', 'clear_all']);
