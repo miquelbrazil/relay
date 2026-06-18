@@ -141,6 +141,106 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
+   Per-type payload renderers. Each .relay-payload carries data-payload-type, so
+   a type can be styled here without touching the renderer JS.
+   --------------------------------------------------------------------------- */
+
+/* exception — class chip, message, then a click-to-jump stack. */
+.relay-exception-head {
+  margin-bottom: 4px;
+}
+.relay-exception-class {
+  background: var(--vscode-inputValidation-errorBackground, transparent);
+  border: 1px solid var(--vscode-inputValidation-errorBorder, var(--vscode-errorForeground));
+  color: var(--vscode-errorForeground);
+}
+.relay-exception-message {
+  margin-bottom: 6px;
+}
+
+/* Shared stack-frame list (exception, trace, caller). */
+.relay-frames {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.relay-frame {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.85em;
+}
+.relay-frame-fn {
+  color: var(--vscode-descriptionForeground);
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+/* Vendor frames are de-emphasized but still clickable. */
+.relay-frame-vendor {
+  opacity: 0.55;
+}
+
+/* table — key/value rows. */
+.relay-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.relay-table th,
+.relay-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 2px 8px 2px 0;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+.relay-table th {
+  color: var(--vscode-descriptionForeground);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.relay-table-label {
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+/* measure — name plus inline stat chips. */
+.relay-measure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+.relay-measure-name {
+  font-weight: 600;
+}
+.relay-measure-stat {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* carbon — formatted date + timezone. */
+.relay-carbon {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.relay-carbon-tz {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.85em;
+}
+
+/* custom (html/text/image/send) — label chip above the body. */
+.relay-custom-header {
+  margin-bottom: 4px;
+}
+
+/* json_string — pretty-printed JSON. */
+.relay-json-pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ---------------------------------------------------------------------------
    Color-accent styles. A colored item carries `.relay-colored` and an inline
    --relay-color variable; body[data-color-style] (set by relayPanel.colorStyle)
    selects how that accent is drawn. Switching the attribute restyles every item

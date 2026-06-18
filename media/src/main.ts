@@ -1,16 +1,52 @@
+import type { RelayItem, RelayPayload } from '../../src/protocol';
+import { el, badge, createContext } from './context';
+import { RendererRegistry } from './registry';
+import { LogRenderer } from './renderers/LogRenderer';
+import { CustomRenderer } from './renderers/CustomRenderer';
+import { JsonStringRenderer } from './renderers/JsonStringRenderer';
+import { ExceptionRenderer } from './renderers/ExceptionRenderer';
+import { TraceRenderer } from './renderers/TraceRenderer';
+import { CallerRenderer } from './renderers/CallerRenderer';
+import { TableRenderer } from './renderers/TableRenderer';
+import { MeasureRenderer } from './renderers/MeasureRenderer';
+import { CarbonRenderer } from './renderers/CarbonRenderer';
+import { FallbackRenderer } from './renderers/FallbackRenderer';
+
 const vscode = acquireVsCodeApi();
 
-const list = document.getElementById('relay-list');
+// Shared collaborators (el/badge/sanitize/originLink/post) handed to every renderer.
+const ctx = createContext((message) => vscode.postMessage(message));
+
+// One renderer per Ray payload type, with an explicit fallback for everything else.
+// Register a new type by adding its renderer here — see docs/architecture/renderer-strategy.md.
+// Note: ray()->html()/text()/image()/send() all arrive as type 'custom' (CustomRenderer
+// branches on content.label).
+const registry = new RendererRegistry(
+  [
+    new LogRenderer(),
+    new CustomRenderer(),
+    new JsonStringRenderer(),
+    new ExceptionRenderer(),
+    new TraceRenderer(),
+    new CallerRenderer(),
+    new TableRenderer(),
+    new MeasureRenderer(),
+    new CarbonRenderer(),
+  ],
+  new FallbackRenderer(),
+);
+
+const list = document.getElementById('relay-list')!;
 
 // uuid -> the rendered DOM node, so updates/removes can target it in place.
-const nodes = new Map();
+const nodes = new Map<string, HTMLElement>();
 
 // Ray's filterable color palette. Order mirrors the dots in the Ray.app toolbar.
 const COLORS = ['gray', 'red', 'orange', 'green', 'blue', 'purple'];
 
 // Each color resolves to a theme variable, exposed per-item as --relay-color so the
 // active color style (border/tint/dot/origin, see main.css) can reference one value.
-const COLOR_VARS = {
+const COLOR_VARS: Record<string, string> = {
   gray: 'var(--vscode-descriptionForeground)',
   red: 'var(--vscode-charts-red)',
   orange: 'var(--vscode-charts-orange)',
@@ -22,9 +58,9 @@ const COLOR_VARS = {
 // Active color filter. Empty = show everything. Persisted via the webview state so it
 // survives the panel being hidden/redrawn (the DOM is disposable; this isn't).
 const saved = vscode.getState() || {};
-const activeColors = new Set(Array.isArray(saved.activeColors) ? saved.activeColors : []);
+const activeColors = new Set<string>(Array.isArray(saved.activeColors) ? saved.activeColors : []);
 
-window.addEventListener('message', (event) => {
+window.addEventListener('message', (event: MessageEvent) => {
   const msg = event.data;
   switch (msg.type) {
     case 'replay':
@@ -56,7 +92,7 @@ window.addEventListener('message', (event) => {
 
 // Insert a new item or replace the existing node for its uuid (chained calls like
 // ray()->color()->label() mutate an item already on screen).
-function upsert(item) {
+function upsert(item: RelayItem): void {
   const node = renderItem(item);
   const existing = nodes.get(item.uuid);
   if (existing) {
@@ -69,7 +105,7 @@ function upsert(item) {
   initDumps(node);
 }
 
-function remove(uuid) {
+function remove(uuid: string): void {
   const existing = nodes.get(uuid);
   if (existing) {
     existing.remove();
@@ -77,7 +113,7 @@ function remove(uuid) {
   }
 }
 
-function renderItem(item) {
+function renderItem(item: RelayItem): HTMLElement {
   const container = el('div', 'relay-item');
   container.dataset.uuid = item.uuid;
   container.dataset.color = item.color || '';
@@ -108,9 +144,18 @@ function renderItem(item) {
   return container;
 }
 
+// Dispatch a payload to the renderer that owns its type (unknown types hit the fallback).
+// The .relay-payload wrapper carries data-payload-type so main.css can style per type.
+function renderPayload(p: RelayPayload): HTMLElement {
+  const wrap = el('div', 'relay-payload');
+  wrap.dataset.payloadType = p.type;
+  wrap.appendChild(registry.resolve(p.type).render(p, ctx));
+  return wrap;
+}
+
 // Origin pointer and timestamp share one footer line, matching the Ray.app layout
 // ("DashboardViewAction.php:19   01:29:14.901").
-function renderFooter(item) {
+function renderFooter(item: RelayItem): HTMLElement {
   const footer = el('div', 'relay-footer');
   // Color chip — a real element (not a ::before) so it can carry a tooltip naming the
   // color. Hidden by CSS for styles that don't use it.
@@ -120,7 +165,7 @@ function renderFooter(item) {
     footer.appendChild(chip);
   }
   if (item.origin && item.origin.file) {
-    footer.appendChild(originLink(item.origin));
+    footer.appendChild(ctx.originLink(item.origin));
   }
   if (item.receivedAt) {
     const time = el('span', 'relay-time');
@@ -130,45 +175,15 @@ function renderFooter(item) {
   return footer;
 }
 
-function formatTime(ms) {
+function formatTime(ms: number): string {
   const d = new Date(ms);
-  const p = (n, len = 2) => String(n).padStart(len, '0');
+  const p = (n: number, len = 2) => String(n).padStart(len, '0');
   return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.${p(d.getMilliseconds(), 3)}`;
-}
-
-// `log` payloads carry pre-rendered VarDumper HTML (sf-dump trees) in content.values;
-// many helpers (html(), text(), custom packages) arrive as a `content` string. Both are
-// untrusted HTML off a localhost socket, so we sanitize before injecting, then let the
-// vendored Sfdump make the tree interactive (see initDumps).
-function renderPayload(p) {
-  const wrap = el('div', 'relay-payload');
-  const c = p.content || {};
-  if (Array.isArray(c.values)) {
-    wrap.innerHTML = sanitize(c.values.join(''));
-  } else if (typeof c.content === 'string') {
-    wrap.innerHTML = sanitize(c.content);
-  } else {
-    wrap.textContent = JSON.stringify(c, null, 2);
-  }
-  return wrap;
-}
-
-function originLink(origin) {
-  const a = el('a', 'relay-origin');
-  a.href = '#';
-  const file = String(origin.file || '');
-  const short = file.split('/').pop() || file;
-  a.textContent = `${short}:${origin.line_number ?? ''}`;
-  a.addEventListener('click', (e) => {
-    e.preventDefault();
-    vscode.postMessage({ type: 'open-origin', origin });
-  });
-  return a;
 }
 
 // --- Color filtering (Ray.app-style dots) ----------------------------------
 
-function buildToolbar() {
+function buildToolbar(): void {
   const bar = document.getElementById('relay-toolbar');
   if (!bar) {
     return;
@@ -217,7 +232,7 @@ function buildToolbar() {
 
 // An item is visible when no filter is active, or when its color is among the active
 // ones. Uncolored items are hidden while any color filter is on (matching Ray.app).
-function applyFilter() {
+function applyFilter(): void {
   for (const node of nodes.values()) {
     const color = node.dataset.color || '';
     const visible = activeColors.size === 0 || (color && activeColors.has(color));
@@ -225,23 +240,13 @@ function applyFilter() {
   }
 }
 
-// Strip <script>/<style> (we vendor our own sf-dump assets) but keep sf-dump's classes
-// and data-* attributes, which DOMPurify preserves by default. Never use 'unsafe-inline'
-// in the CSP to make raw payload scripts run — sanitize here instead.
-function sanitize(html) {
-  if (typeof html !== 'string') {
-    return '';
-  }
-  return DOMPurify.sanitize(html, { FORBID_TAGS: ['script', 'style'] });
-}
-
 // The inline `Sfdump("sf-dump-NNN")` call that normally follows each dump is stripped by
 // the sanitizer, so we initialize each dump ourselves once, after it's in the document.
-function initDumps(root) {
+function initDumps(root: HTMLElement): void {
   if (typeof Sfdump !== 'function') {
     return;
   }
-  for (const pre of root.querySelectorAll('pre.sf-dump')) {
+  for (const pre of root.querySelectorAll<HTMLElement>('pre.sf-dump')) {
     if (pre.dataset.relayInit) {
       continue;
     }
@@ -255,20 +260,6 @@ function initDumps(root) {
       /* a malformed dump shouldn't take down the panel */
     }
   }
-}
-
-function badge(text, cls) {
-  const b = el('span', cls ? `relay-badge ${cls}` : 'relay-badge');
-  b.textContent = text;
-  return b;
-}
-
-function el(tag, cls) {
-  const e = document.createElement(tag);
-  if (cls) {
-    e.className = cls;
-  }
-  return e;
 }
 
 buildToolbar();

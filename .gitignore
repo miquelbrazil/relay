@@ -4,6 +4,9 @@ node_modules/
 # Build output
 dist/
 out/
+# The webview bundle is generated from media/src/ by esbuild.
+media/main.js
+media/main.js.map
 
 # Packaged artifacts
 *.vsix

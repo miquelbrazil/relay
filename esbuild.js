@@ -24,7 +24,12 @@ const esbuildProblemMatcherPlugin = {
 };
 
 async function main() {
-	const ctx = await esbuild.context({
+	// Two entry points because there are two runtimes: the extension host (Node) and the
+	// webview (a sandboxed browser iframe). Their build options are mutually exclusive
+	// (node/cjs/external:vscode vs browser/iife+DOM) and they are delivered separately, so
+	// they cannot share one bundle — only shared SOURCE (src/protocol.ts), which esbuild
+	// inlines into each output. See docs/architecture/renderer-strategy.md.
+	const host = await esbuild.context({
 		entryPoints: [
 			'src/extension.ts'
 		],
@@ -42,11 +47,31 @@ async function main() {
 			esbuildProblemMatcherPlugin,
 		],
 	});
+
+	const webview = await esbuild.context({
+		entryPoints: [
+			'media/src/main.ts'
+		],
+		bundle: true,
+		format: 'iife',
+		minify: production,
+		sourcemap: !production,
+		sourcesContent: false,
+		platform: 'browser',
+		target: ['es2022'],
+		outfile: 'media/main.js',
+		logLevel: 'silent',
+		plugins: [
+			esbuildProblemMatcherPlugin,
+		],
+	});
+
+	const contexts = [host, webview];
 	if (watch) {
-		await ctx.watch();
+		await Promise.all(contexts.map((c) => c.watch()));
 	} else {
-		await ctx.rebuild();
-		await ctx.dispose();
+		await Promise.all(contexts.map((c) => c.rebuild()));
+		await Promise.all(contexts.map((c) => c.dispose()));
 	}
 }
 

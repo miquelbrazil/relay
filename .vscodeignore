@@ -8,6 +8,8 @@ src/**
 esbuild.js
 vsc-extension-quickstart.md
 **/tsconfig.json
+tsconfig.webview.json
+docs/**
 **/eslint.config.mjs
 **/*.map
 **/*.ts

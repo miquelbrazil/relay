@@ -13,5 +13,8 @@
 		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
 		// "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
 		// "noUnusedParameters": true,  /* Report errors on unused parameters. */
-	}
+	},
+	// Scope the host project to src/ so the DOM-targeted webview sources (media/src,
+	// type-checked separately via tsconfig.webview.json) aren't pulled into this build.
+	"include": ["src"]
 }
