@@ -134,6 +134,7 @@
         "check-types": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.webview.json",
         "lint": "eslint src media/src",
         "test": "vscode-test",
+        "smoke": "esbuild scripts/smoke-renderers.ts --bundle --platform=node --format=cjs --outfile=out/smoke-renderers.cjs --log-level=error && node out/smoke-renderers.cjs",
         "vsix": "vsce package"
     },
     "devDependencies": {
